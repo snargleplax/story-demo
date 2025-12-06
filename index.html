@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Story Generator</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        h1 {
+            color: #e94560;
+            border-bottom: 2px solid #e94560;
+            padding-bottom: 10px;
+        }
+        #story {
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+        .text {
+            color: #eee;
+            margin: 10px 0;
+        }
+        .choices {
+            color: #888;
+            margin: 5px 0;
+        }
+        .picked {
+            color: #e94560;
+            margin-bottom: 15px;
+        }
+        .ending {
+            color: #4ecdc4;
+            font-weight: bold;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #4ecdc4;
+        }
+        #loading {
+            color: #888;
+        }
+        #refresh {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        #refresh:hover {
+            background: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <h1>Story Generator</h1>
+    <div id="loading">Loading WASM...</div>
+    <div id="story"></div>
+    <button id="refresh" style="display:none" onclick="location.reload()">Generate New Story</button>
+
+    <script src="wasm_exec.js"></script>
+    <script>
+        const go = new Go();
+        WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then((result) => {
+            go.run(result.instance);
+            document.getElementById('loading').style.display = 'none';
+
+            const seed = Date.now();
+            const json = generateStory(seed);
+            const story = JSON.parse(json);
+
+            if (story.error) {
+                document.getElementById('story').innerHTML = '<div class="text">Error: ' + story.error + '</div>';
+                return;
+            }
+
+            let html = '';
+            for (const step of story.steps) {
+                if (step.text) {
+                    html += '<div class="text">' + escapeHtml(step.text) + '</div>';
+                }
+                if (step.choices && step.choices.length > 0) {
+                    for (let i = 0; i < step.choices.length; i++) {
+                        html += '<div class="choices">  ' + (i+1) + '. ' + escapeHtml(step.choices[i]) + '</div>';
+                    }
+                    html += '<div class="picked">&gt; [picked ' + step.picked + '] ' + escapeHtml(step.choices[step.picked-1]) + '</div>';
+                }
+            }
+            if (story.ending) {
+                html += '<div class="ending">=== THE END ===\n\n' + escapeHtml(story.ending) + '</div>';
+            }
+
+            document.getElementById('story').innerHTML = html;
+            document.getElementById('refresh').style.display = 'block';
+        }).catch(err => {
+            document.getElementById('loading').textContent = 'Error loading WASM: ' + err;
+        });
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
