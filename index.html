@@ -63,13 +63,6 @@
             font-size: 12px;
             text-align: center;
         }
-        #footer a {
-            color: #666;
-            text-decoration: none;
-        }
-        #footer a:hover {
-            color: #888;
-        }
     </style>
 </head>
 <body>
@@ -118,9 +111,7 @@
             const buildInfoJson = getBuildInfo();
             const buildInfo = JSON.parse(buildInfoJson);
             const shortSHA = buildInfo.gitSHA.substring(0, 7);
-            document.getElementById('footer').innerHTML =
-                '<a href="https://github.com/snargleplax/story/commit/' + buildInfo.gitSHA + '" target="_blank">' +
-                shortSHA + '</a>';
+            document.getElementById('footer').textContent = shortSHA;
         }).catch(err => {
             document.getElementById('loading').textContent = 'Error loading WASM: ' + err;
         });
